@@ -1,0 +1,1 @@
+dotnet build SCP--.sln -c Release

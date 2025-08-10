@@ -1,4 +1,6 @@
-# scp--：Win SCP 懒狗GUI工具
+OUTDATED
+
+# SCP--：Win SCP 懒狗GUI工具
 
 一个运行于Windows的单文件portable 图形化 SCP 启动工具，用于解决懒得输入SCP命令和vscode传输慢没有进度条的问题，为懒狗长期使用而设计。
 
