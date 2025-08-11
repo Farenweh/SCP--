@@ -29,6 +29,7 @@ namespace ScpLauncher
         private void InitializeComponent()
         {
             this.lblHeader = new System.Windows.Forms.Label();
+            this.lblWarn = new System.Windows.Forms.Label();
             this.radioFile = new System.Windows.Forms.RadioButton();
             this.radioDir = new System.Windows.Forms.RadioButton();
             this.lblType = new System.Windows.Forms.Label();
@@ -113,6 +114,7 @@ namespace ScpLauncher
             this.radioFile.TabStop = true;
             this.radioFile.Text = "文件";
             this.radioFile.UseVisualStyleBackColor = true;
+            this.radioFile.CheckedChanged += new System.EventHandler(this.radio_CheckedChanged);
             // 
             // radioDir
             // 
@@ -123,6 +125,7 @@ namespace ScpLauncher
             this.radioDir.TabIndex = 2;
             this.radioDir.Text = "目录";
             this.radioDir.UseVisualStyleBackColor = true;
+            this.radioDir.CheckedChanged += new System.EventHandler(this.radio_CheckedChanged);
 
             // lblCfg
             // 
@@ -196,6 +199,7 @@ namespace ScpLauncher
             this.panelScroll.Size = new System.Drawing.Size(640, 176);
             this.panelScroll.TabIndex = 5;
             this.panelScroll.Controls.Add(this.table);
+            this.panelScroll.Controls.Add(this.lblWarn);
             // 
             // table
             // 
@@ -232,6 +236,17 @@ namespace ScpLauncher
             this.table.Padding = new System.Windows.Forms.Padding(0, 4, 0, 4);
             this.table.Size = new System.Drawing.Size(592, 240);
             this.table.TabIndex = 2;
+
+            // lblWarn
+            // 
+            this.lblWarn.AutoSize = false;
+            this.lblWarn.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblWarn.Height = 28;
+            this.lblWarn.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.lblWarn.ForeColor = System.Drawing.Color.FromArgb(200, 80, 80);
+            this.lblWarn.Padding = new System.Windows.Forms.Padding(0, 6, 0, 0);
+            this.lblWarn.Margin = new System.Windows.Forms.Padding(24, 4, 24, 0);
+            this.lblWarn.Text = "";
             // 
             // Labels
             // 
@@ -328,6 +343,7 @@ namespace ScpLauncher
         #endregion
 
         private System.Windows.Forms.Label lblHeader;
+    private System.Windows.Forms.Label lblWarn;
         private System.Windows.Forms.Panel panelTop;
         private System.Windows.Forms.RadioButton radioFile;
         private System.Windows.Forms.RadioButton radioDir;
