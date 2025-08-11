@@ -1,8 +1,7 @@
 using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ScpLauncher
@@ -12,7 +11,7 @@ namespace ScpLauncher
         private readonly bool uploadMode;
         private int countdown = 0;
         private readonly Timer timer;
-    private bool suppressApply = false;
+        private bool suppressApply = false;
 
         public TransferPage(bool upload)
         {
@@ -28,6 +27,25 @@ namespace ScpLauncher
 
             timer = new Timer { Interval = 1000 };
             timer.Tick += (_, __) => TickCountdown();
+
+            // Drag & Drop support
+            try
+            {
+                txtKey.AllowDrop = true;
+                txtKey.DragEnter += OnDragEnterFiles;
+                txtKey.DragDrop += OnKeyDragDrop;
+
+                txtLocal.AllowDrop = true;
+                txtLocal.DragEnter += OnDragEnterFiles;
+                txtLocal.DragDrop += OnLocalDragDrop;
+            }
+            catch { }
+
+            // 占位提示（托管方式，浅灰色）
+            SetupPlaceholder(txtPort, "22");
+            SetupPlaceholder(txtKey, "拖拽到此处");
+            SetupPlaceholder(txtLocal, "拖拽到此处");
+            RefreshPlaceholders();
         }
 
         private void btnBack_Click(object sender, EventArgs e)
@@ -61,19 +79,21 @@ namespace ScpLauncher
             try
             {
                 txtUser.Text = cfg.Username ?? string.Empty;
-                txtKey.Text = cfg.KeyPath ?? string.Empty;
                 txtIp.Text = cfg.Ip ?? string.Empty;
-                txtPort.Text = cfg.Port ?? string.Empty;
+                // 对带占位符的文本框使用安全写入，避免残留灰显状态
+                SetTextValue(txtKey, cfg.KeyPath);
+                SetTextValue(txtPort, cfg.Port);
                 if (uploadMode)
                 {
                     txtRemote.Text = cfg.UploadRemote ?? string.Empty;
-                    txtLocal.Text = string.Empty; // 上传时由用户选择
+                    SetTextValue(txtLocal, string.Empty); // 上传由用户选择
                 }
                 else
                 {
-                    txtRemote.Text = string.Empty; // 下载时由用户填写
-                    txtLocal.Text = cfg.DownloadLocal ?? string.Empty;
+                    txtRemote.Text = string.Empty; // 下载由用户填写
+                    SetTextValue(txtLocal, cfg.DownloadLocal);
                 }
+                RefreshPlaceholders();
             }
             finally
             {
@@ -87,9 +107,9 @@ namespace ScpLauncher
             {
                 Username = txtUser.Text.Trim(),
                 Ip = txtIp.Text.Trim(),
-                Port = txtPort.Text.Trim(),
-                KeyPath = txtKey.Text.Trim(),
-                DownloadLocal = txtLocal.Text.Trim(),
+                Port = ReadTextValue(txtPort).Trim(),
+                KeyPath = ReadTextValue(txtKey).Trim(),
+                DownloadLocal = ReadTextValue(txtLocal).Trim(),
                 UploadRemote = txtRemote.Text.Trim()
             };
         }
@@ -102,34 +122,34 @@ namespace ScpLauncher
                 ofd.Filter = "所有文件 (*.*)|*.*";
                 if (ofd.ShowDialog(this) == DialogResult.OK)
                 {
-                    txtKey.Text = ofd.FileName;
+                    SetTextValue(txtKey, ofd.FileName);
                 }
             }
         }
 
         private void btnChooseLocal_Click(object sender, EventArgs e)
         {
-            // 下载模式：本地路径始终选择目录，用于存放下载内容
+            // 下载模式：本地路径始终选择目录
             if (!uploadMode)
             {
                 using (var fbd = new FolderBrowserDialog())
                 {
                     if (fbd.ShowDialog(this) == DialogResult.OK)
                     {
-                        txtLocal.Text = fbd.SelectedPath;
+                        SetTextValue(txtLocal, fbd.SelectedPath);
                     }
                 }
                 return;
             }
 
-            // 上传模式：根据“传输类型”决定选择文件或目录
+            // 上传模式：根据传输类型
             if (radioDir.Checked)
             {
                 using (var fbd = new FolderBrowserDialog())
                 {
                     if (fbd.ShowDialog(this) == DialogResult.OK)
                     {
-                        txtLocal.Text = fbd.SelectedPath;
+                        SetTextValue(txtLocal, fbd.SelectedPath);
                     }
                 }
             }
@@ -141,7 +161,7 @@ namespace ScpLauncher
                     ofd.Filter = "所有文件 (*.*)|*.*";
                     if (ofd.ShowDialog(this) == DialogResult.OK)
                     {
-                        txtLocal.Text = ofd.FileName;
+                        SetTextValue(txtLocal, ofd.FileName);
                     }
                 }
             }
@@ -149,13 +169,12 @@ namespace ScpLauncher
 
         private void btnStart_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtLocal.Text) || string.IsNullOrWhiteSpace(txtRemote.Text))
+            if (string.IsNullOrWhiteSpace(ReadTextValue(txtLocal)) || string.IsNullOrWhiteSpace(txtRemote.Text))
                 return;
 
-            // 下载模式下，本地路径必须为目录
             if (!uploadMode)
             {
-                var path = txtLocal.Text.Trim();
+                var path = ReadTextValue(txtLocal).Trim();
                 if (File.Exists(path))
                 {
                     MessageBox.Show(this, "下载任务的本地路径用于保存内容，请选择一个目录。", "路径错误", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -206,19 +225,12 @@ namespace ScpLauncher
                 {
                     var alias = prompt.Value?.Trim();
                     if (string.IsNullOrWhiteSpace(alias)) return;
-                    TransferConfig baseCfg = new TransferConfig();
-                    if (ConfigStore.Exists(alias))
-                    {
-                        // 已存在则合并
-                        baseCfg = ConfigStore.Load(alias);
-                    }
+                    TransferConfig baseCfg = ConfigStore.Exists(alias) ? ConfigStore.Load(alias) : new TransferConfig();
                     var curr = CollectConfigFromFields();
-                    // 通用字段
                     baseCfg.Username = curr.Username;
                     baseCfg.Ip = curr.Ip;
                     baseCfg.Port = curr.Port;
                     baseCfg.KeyPath = curr.KeyPath;
-                    // 页面特定字段
                     if (uploadMode)
                         baseCfg.UploadRemote = curr.UploadRemote;
                     else
@@ -235,12 +247,10 @@ namespace ScpLauncher
             if (string.IsNullOrWhiteSpace(alias) || alias == "(无配置)") return;
             var baseCfg = ConfigStore.Load(alias);
             var curr = CollectConfigFromFields();
-            // 通用字段
             baseCfg.Username = curr.Username;
             baseCfg.Ip = curr.Ip;
             baseCfg.Port = curr.Port;
             baseCfg.KeyPath = curr.KeyPath;
-            // 页面特定字段
             if (uploadMode)
                 baseCfg.UploadRemote = curr.UploadRemote;
             else
@@ -287,9 +297,9 @@ namespace ScpLauncher
         {
             var user = txtUser.Text.Trim();
             var ip = txtIp.Text.Trim();
-            var port = txtPort.Text.Trim();
-            var key = txtKey.Text.Trim();
-            var local = txtLocal.Text.Trim();
+            var port = ReadTextValue(txtPort).Trim();
+            var key = ReadTextValue(txtKey).Trim();
+            var local = ReadTextValue(txtLocal).Trim();
             var remote = txtRemote.Text.Trim();
             bool isDir = radioDir.Checked;
             string flagR = isDir ? "-r" : string.Empty;
@@ -312,7 +322,6 @@ namespace ScpLauncher
 
         private void LaunchInCmd(string cmd)
         {
-            // start a new cmd window and keep it open
             var psi = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
@@ -351,6 +360,120 @@ namespace ScpLauncher
             {
                 btnStart.Text = $"{countdown}s";
             }
+        }
+
+        private void OnDragEnterFiles(object sender, DragEventArgs e)
+        {
+            if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
+                e.Effect = DragDropEffects.Copy;
+            else
+                e.Effect = DragDropEffects.None;
+        }
+
+        private void OnKeyDragDrop(object sender, DragEventArgs e)
+        {
+            if (e.Data == null || !e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+            var files = e.Data.GetData(DataFormats.FileDrop) as string[];
+            if (files == null || files.Length == 0) return;
+            var path = files[0];
+            if (Directory.Exists(path)) return; // 只接受文件
+            SetTextValue(txtKey, path);
+        }
+
+        private void OnLocalDragDrop(object sender, DragEventArgs e)
+        {
+            if (e.Data == null || !e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+            var files = e.Data.GetData(DataFormats.FileDrop) as string[];
+            if (files == null || files.Length == 0) return;
+            var path = files[0];
+
+            if (uploadMode)
+            {
+                if (Directory.Exists(path)) radioDir.Checked = true; else radioFile.Checked = true;
+                txtLocal.Text = path;
+            }
+            else
+            {
+                string targetDir = path;
+                if (File.Exists(path))
+                {
+                    var parent = Path.GetDirectoryName(path);
+                    if (!string.IsNullOrEmpty(parent)) targetDir = parent;
+                }
+                else if (!Directory.Exists(path))
+                {
+                    return;
+                }
+                SetTextValue(txtLocal, targetDir);
+            }
+        }
+
+        // --- 占位符工具 ---
+        private class PlaceholderState
+        {
+            public string Placeholder;
+            public bool Active;
+            public Color OriginalColor;
+        }
+
+        private void SetupPlaceholder(TextBox tb, string placeholder)
+        {
+            if (tb == null) return;
+            var state = new PlaceholderState { Placeholder = placeholder, Active = false, OriginalColor = tb.ForeColor };
+            tb.Tag = state;
+            tb.Enter += (s, e) =>
+            {
+                var st = tb.Tag as PlaceholderState;
+                if (st != null && st.Active)
+                {
+                    st.Active = false;
+                    tb.Text = string.Empty;
+                    tb.ForeColor = st.OriginalColor;
+                }
+            };
+            tb.Leave += (s, e) => ApplyPlaceholderIfEmpty(tb);
+        }
+
+        private void ApplyPlaceholderIfEmpty(TextBox tb)
+        {
+            var st = tb.Tag as PlaceholderState;
+            if (st == null) return;
+            if (string.IsNullOrEmpty(tb.Text) && !tb.Focused)
+            {
+                st.Active = true;
+                tb.ForeColor = Color.FromArgb(150, 150, 150);
+                tb.Text = st.Placeholder;
+            }
+        }
+
+        private void RefreshPlaceholders()
+        {
+            ApplyPlaceholderIfEmpty(txtPort);
+            ApplyPlaceholderIfEmpty(txtKey);
+            ApplyPlaceholderIfEmpty(txtLocal);
+        }
+
+        private string ReadTextValue(TextBox tb)
+        {
+            var st = tb.Tag as PlaceholderState;
+            if (st != null && st.Active) return string.Empty;
+            if (st != null && tb.Text == st.Placeholder && tb.ForeColor.ToArgb() == Color.FromArgb(150, 150, 150).ToArgb())
+            {
+                return string.Empty;
+            }
+            return tb.Text ?? string.Empty;
+        }
+
+        // 程序化设置值时，关闭占位符状态并恢复原始前景色
+        private void SetTextValue(TextBox tb, string value)
+        {
+            var st = tb.Tag as PlaceholderState;
+            if (st != null)
+            {
+                st.Active = false;
+                tb.ForeColor = st.OriginalColor;
+            }
+            tb.Text = value ?? string.Empty;
         }
     }
 }
