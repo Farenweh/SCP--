@@ -1,5 +1,3 @@
-OUTDATED
-
 # SCP--：Win SCP 懒狗GUI工具
 
 一个运行于Windows的单文件portable 图形化 SCP 启动工具，用于解决懒得输入SCP命令和vscode传输慢没有进度条的问题，为懒狗长期使用而设计。
@@ -11,32 +9,25 @@ OUTDATED
 - 🔐 **SSH 密钥认证**：使用 SSH 私钥进行安全连接
 - 🎯 **双向传输**：支持上传到远程服务器和从远程服务器下载
 
-启动后可以自动填写以下内容：
-![](./example.png)
+启动后可通过“配置预设”下拉框选择/新增/修改/删除多套连接与路径配置，并一键启动上传/下载。
+## 配置与预设（新）
 
-## 使用要求
+- 程序启动时将确保配置目录存在：`~/.SCP--/`
+- 支持多配置文件，命名为 `别名.cfg`；例如：`work.cfg`、`home.cfg`
+- 配置文件为 key=value 的简单文本格式，示例：
 
-- Windows 操作系统
-- openssh
+    username=your_username
+    ip=your_server_ip
+    port=22
+    keypath=C:\\Users\\you\\.ssh\\id_rsa
+    downloadlocal=C:\\Users\\you\\Downloads
+    uploadremote=~/workspace
 
-## 重打包要求
-
-- Pyqt6
-- Pyinstaller
-
-## 使用说明
-
-### 首次部署
-
-1. **配置默认值**：编辑 `scp--.py` 文件中的 `DEFAULTS` 字典，设置你的默认参数：
-   ```python
-   DEFAULTS = {
-       "username": "your_username",
-       "ip": "your_server_ip",
-       "port": "22",
-       "key": r"C:\path\to\your\private_key",
-       "download_local": r"C:\your\download\path",
-       "upload_remote": "~/workspace",
+- 在上传/下载子页面：
+    - 通过“配置预设”下拉选择已有别名以快速填充参数；
+    - 点击“新增”可输入别名并以当前表单内容保存为新配置；
+    - 点击“修改”用当前表单内容覆盖所选配置；
+    - 点击“删除”删除所选配置文件。
    }
    ```
 
@@ -54,14 +45,14 @@ OUTDATED
 2. 私钥文件路径正确
 3. 服务器已配置相应的公钥
 
-### 默认配置
+### 字段说明
 
-- **用户名**：SSH 连接用户名
-- **IP 地址**：远程服务器 IP
-- **端口**：SSH 连接端口（默认 22）
-- **私钥路径**：SSH 私钥文件的完整路径
-- **本地路径**：默认的本地文件保存位置
-- **远程路径**：默认的远程目录路径
+- 用户名：SSH 连接用户名
+- 远端 IP：服务器 IP 或域名
+- 远端端口：SSH 端口（通常 22）
+- SSH 密钥路径：本机私钥文件完整路径
+- 本地路径：下载时的本地目录/文件
+- 远端路径：上传时的远端目录/文件
 
 ## 注意事项
 
@@ -74,7 +65,7 @@ OUTDATED
 
 - **作者**：chenbuyi
 - **GitHub**：https://github.com/Farenweh
-- **版本**：基于 PyQt6 的 Windows 版本
+- **版本**：基于 .NET WinForms 的 Windows 版本
 
 ## 许可证
 

@@ -32,6 +32,12 @@ namespace ScpLauncher
             this.radioFile = new System.Windows.Forms.RadioButton();
             this.radioDir = new System.Windows.Forms.RadioButton();
             this.lblType = new System.Windows.Forms.Label();
+            this.lblCfg = new System.Windows.Forms.Label();
+            this.comboConfig = new System.Windows.Forms.ComboBox();
+            this.btnCfgAdd = new System.Windows.Forms.Button();
+            this.btnCfgEdit = new System.Windows.Forms.Button();
+            this.btnCfgRename = new System.Windows.Forms.Button();
+            this.btnCfgDelete = new System.Windows.Forms.Button();
             this.btnBack = new System.Windows.Forms.Button();
             this.btnStart = new System.Windows.Forms.Button();
             this.panelScroll = new System.Windows.Forms.Panel();
@@ -71,6 +77,12 @@ namespace ScpLauncher
             // 
             // panelTop
             // 
+            this.panelTop.Controls.Add(this.btnCfgDelete);
+            this.panelTop.Controls.Add(this.btnCfgRename);
+            this.panelTop.Controls.Add(this.btnCfgEdit);
+            this.panelTop.Controls.Add(this.btnCfgAdd);
+            this.panelTop.Controls.Add(this.comboConfig);
+            this.panelTop.Controls.Add(this.lblCfg);
             this.panelTop.Controls.Add(this.radioFile);
             this.panelTop.Controls.Add(this.radioDir);
             this.panelTop.Controls.Add(this.lblType);
@@ -78,7 +90,7 @@ namespace ScpLauncher
             this.panelTop.Location = new System.Drawing.Point(0, 52);
             this.panelTop.Name = "panelTop";
             this.panelTop.Padding = new System.Windows.Forms.Padding(24, 6, 24, 6);
-            this.panelTop.Size = new System.Drawing.Size(640, 40);
+            this.panelTop.Size = new System.Drawing.Size(640, 76);
             this.panelTop.TabIndex = 1;
             // 
             // lblType
@@ -111,15 +123,77 @@ namespace ScpLauncher
             this.radioDir.TabIndex = 2;
             this.radioDir.Text = "目录";
             this.radioDir.UseVisualStyleBackColor = true;
+
+            // lblCfg
+            // 
+            this.lblCfg.AutoSize = true;
+            this.lblCfg.Location = new System.Drawing.Point(20, 44);
+            this.lblCfg.Name = "lblCfg";
+            this.lblCfg.Size = new System.Drawing.Size(68, 15);
+            this.lblCfg.TabIndex = 3;
+            this.lblCfg.Text = "配置预设:";
+
+            // comboConfig
+            // 
+            this.comboConfig.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboConfig.Location = new System.Drawing.Point(110, 40);
+            this.comboConfig.Name = "comboConfig";
+            this.comboConfig.Size = new System.Drawing.Size(260, 23);
+            this.comboConfig.TabIndex = 4;
+            this.comboConfig.SelectedIndexChanged += new System.EventHandler(this.comboConfig_SelectedIndexChanged);
+
+            // btnCfgAdd
+            // 
+            this.btnCfgAdd.AutoSize = true;
+            this.btnCfgAdd.Location = new System.Drawing.Point(380, 39);
+            this.btnCfgAdd.Name = "btnCfgAdd";
+            this.btnCfgAdd.Size = new System.Drawing.Size(52, 25);
+            this.btnCfgAdd.TabIndex = 5;
+            this.btnCfgAdd.Text = "新增";
+            this.btnCfgAdd.UseVisualStyleBackColor = true;
+            this.btnCfgAdd.Click += new System.EventHandler(this.btnCfgAdd_Click);
+
+            // btnCfgEdit
+            // 
+            this.btnCfgEdit.AutoSize = true;
+            this.btnCfgEdit.Location = new System.Drawing.Point(438, 39);
+            this.btnCfgEdit.Name = "btnCfgEdit";
+            this.btnCfgEdit.Size = new System.Drawing.Size(52, 25);
+            this.btnCfgEdit.TabIndex = 6;
+            this.btnCfgEdit.Text = "修改";
+            this.btnCfgEdit.UseVisualStyleBackColor = true;
+            this.btnCfgEdit.Click += new System.EventHandler(this.btnCfgEdit_Click);
+
+            // btnCfgRename
+            // 
+            this.btnCfgRename.AutoSize = true;
+            this.btnCfgRename.Location = new System.Drawing.Point(496, 39);
+            this.btnCfgRename.Name = "btnCfgRename";
+            this.btnCfgRename.Size = new System.Drawing.Size(64, 25);
+            this.btnCfgRename.TabIndex = 7;
+            this.btnCfgRename.Text = "重命名";
+            this.btnCfgRename.UseVisualStyleBackColor = true;
+            this.btnCfgRename.Click += new System.EventHandler(this.btnCfgRename_Click);
+
+            // btnCfgDelete
+            // 
+            this.btnCfgDelete.AutoSize = true;
+            this.btnCfgDelete.Location = new System.Drawing.Point(566, 39);
+            this.btnCfgDelete.Name = "btnCfgDelete";
+            this.btnCfgDelete.Size = new System.Drawing.Size(52, 25);
+            this.btnCfgDelete.TabIndex = 8;
+            this.btnCfgDelete.Text = "删除";
+            this.btnCfgDelete.UseVisualStyleBackColor = true;
+            this.btnCfgDelete.Click += new System.EventHandler(this.btnCfgDelete_Click);
             // 
             // panelScroll
             // 
             this.panelScroll.AutoScroll = true;
             this.panelScroll.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panelScroll.Location = new System.Drawing.Point(0, 92);
+            this.panelScroll.Location = new System.Drawing.Point(0, 128);
             this.panelScroll.Name = "panelScroll";
             this.panelScroll.Padding = new System.Windows.Forms.Padding(24, 8, 24, 8);
-            this.panelScroll.Size = new System.Drawing.Size(640, 212);
+            this.panelScroll.Size = new System.Drawing.Size(640, 176);
             this.panelScroll.TabIndex = 5;
             this.panelScroll.Controls.Add(this.table);
             // 
@@ -134,18 +208,18 @@ namespace ScpLauncher
             this.table.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 96F));
             this.table.Controls.Add(this.lblUser, 0, 0);
             this.table.Controls.Add(this.lblKey, 0, 1);
-            this.table.Controls.Add(this.lblLocal, 0, 2);
-            this.table.Controls.Add(this.lblRemote, 0, 3);
-            this.table.Controls.Add(this.lblIp, 0, 4);
-            this.table.Controls.Add(this.lblPort, 0, 5);
+            this.table.Controls.Add(this.lblIp, 0, 2);
+            this.table.Controls.Add(this.lblPort, 0, 3);
+            this.table.Controls.Add(this.lblLocal, 0, 4);
+            this.table.Controls.Add(this.lblRemote, 0, 5);
             this.table.Controls.Add(this.txtUser, 1, 0);
             this.table.Controls.Add(this.txtKey, 1, 1);
-            this.table.Controls.Add(this.txtLocal, 1, 2);
-            this.table.Controls.Add(this.txtRemote, 1, 3);
-            this.table.Controls.Add(this.txtIp, 1, 4);
-            this.table.Controls.Add(this.txtPort, 1, 5);
+            this.table.Controls.Add(this.txtIp, 1, 2);
+            this.table.Controls.Add(this.txtPort, 1, 3);
+            this.table.Controls.Add(this.txtLocal, 1, 4);
+            this.table.Controls.Add(this.txtRemote, 1, 5);
             this.table.Controls.Add(this.btnChooseKey, 2, 1);
-            this.table.Controls.Add(this.btnChooseLocal, 2, 2);
+            this.table.Controls.Add(this.btnChooseLocal, 2, 4);
             this.table.Location = new System.Drawing.Point(24, 8);
             this.table.Name = "table";
             this.table.RowCount = 6;
@@ -258,6 +332,12 @@ namespace ScpLauncher
         private System.Windows.Forms.RadioButton radioFile;
         private System.Windows.Forms.RadioButton radioDir;
         private System.Windows.Forms.Label lblType;
+    private System.Windows.Forms.Label lblCfg;
+    private System.Windows.Forms.ComboBox comboConfig;
+    private System.Windows.Forms.Button btnCfgAdd;
+    private System.Windows.Forms.Button btnCfgEdit;
+    private System.Windows.Forms.Button btnCfgRename;
+    private System.Windows.Forms.Button btnCfgDelete;
         private System.Windows.Forms.TableLayoutPanel table;
         private System.Windows.Forms.Label lblUser;
         private System.Windows.Forms.Label lblKey;

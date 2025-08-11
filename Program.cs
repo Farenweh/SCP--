@@ -10,6 +10,7 @@ namespace ScpLauncher
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            try { ConfigStore.EnsureConfigDir(); } catch { }
             Application.Run(new MainForm());
         }
     }

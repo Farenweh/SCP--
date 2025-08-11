@@ -112,10 +112,10 @@ namespace ScpLauncher
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(640, 360);
+            this.ClientSize = new System.Drawing.Size(640, 480);
             this.Controls.Add(this.lblFooter);
             this.Controls.Add(this.panelMain);
-            this.MinimumSize = new System.Drawing.Size(700, 460);
+            this.MinimumSize = new System.Drawing.Size(700, 500);
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = Defaults.Title;
