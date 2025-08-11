@@ -20,6 +20,9 @@ namespace ScpLauncher
         public static string ConfigDir
             => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".SCP--");
 
+        private static string LastAliasFile
+            => Path.Combine(ConfigDir, "_last_alias");
+
         public static void EnsureConfigDir()
         {
             if (!Directory.Exists(ConfigDir))
@@ -35,6 +38,25 @@ namespace ScpLauncher
             var files = Directory.GetFiles(ConfigDir, "*.cfg", SearchOption.TopDirectoryOnly);
             foreach (var f in files.Select(f => Path.GetFileNameWithoutExtension(f)).OrderBy(n => n, StringComparer.OrdinalIgnoreCase))
                 yield return f;
+        }
+
+        public static void SetLastAlias(string alias)
+        {
+            EnsureConfigDir();
+            if (string.IsNullOrWhiteSpace(alias)) return;
+            File.WriteAllText(LastAliasFile, alias.Trim());
+        }
+
+        public static string GetLastAlias()
+        {
+            EnsureConfigDir();
+            if (!File.Exists(LastAliasFile)) return null;
+            try
+            {
+                var content = File.ReadAllText(LastAliasFile).Trim();
+                return string.IsNullOrWhiteSpace(content) ? null : content;
+            }
+            catch { return null; }
         }
 
         private static string PathFor(string alias)

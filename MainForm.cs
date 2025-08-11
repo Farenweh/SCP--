@@ -36,6 +36,7 @@ namespace ScpLauncher
             panelMain.Visible = false;
             downloadPage.Visible = false;
             uploadPage.Visible = true;
+            uploadPage.OnActivated();
             uploadPage.Focus();
         }
 
@@ -44,6 +45,7 @@ namespace ScpLauncher
             panelMain.Visible = false;
             uploadPage.Visible = false;
             downloadPage.Visible = true;
+            downloadPage.OnActivated();
             downloadPage.Focus();
         }
 

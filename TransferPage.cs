@@ -10,8 +10,11 @@ namespace ScpLauncher
     {
         private readonly bool uploadMode;
         private int countdown = 0;
-        private readonly Timer timer;
-        private bool suppressApply = false;
+    private readonly Timer timer;
+    private bool suppressApply = false;
+    private bool firstActivated = true;
+    private string lastWriteCheckDir = null;
+    private bool lastWriteCheckOk = true;
 
         public TransferPage(bool upload)
         {
@@ -46,6 +49,10 @@ namespace ScpLauncher
             SetupPlaceholder(txtKey, "拖拽到此处");
             SetupPlaceholder(txtLocal, "拖拽到此处");
             RefreshPlaceholders();
+
+            // 手动编辑实时校验（逐字符）
+            txtKey.TextChanged += OnDataFieldChanged;
+            txtLocal.TextChanged += OnDataFieldChanged;
         }
 
         private void btnBack_Click(object sender, EventArgs e)
@@ -67,8 +74,16 @@ namespace ScpLauncher
             }
             foreach (var a in aliases)
                 comboConfig.Items.Add(a);
+            // 优先：显式指定 > 上次使用 > 默认第一项
+            string last = ConfigStore.GetLastAlias();
+            string toSelect = null;
             if (!string.IsNullOrWhiteSpace(selectAlias) && aliases.Contains(selectAlias))
-                comboConfig.SelectedItem = selectAlias;
+                toSelect = selectAlias;
+            else if (!string.IsNullOrWhiteSpace(last) && aliases.Contains(last))
+                toSelect = last;
+
+            if (!string.IsNullOrWhiteSpace(toSelect))
+                comboConfig.SelectedItem = toSelect;
             else
                 comboConfig.SelectedIndex = 0;
         }
@@ -94,6 +109,8 @@ namespace ScpLauncher
                     SetTextValue(txtLocal, cfg.DownloadLocal);
                 }
                 RefreshPlaceholders();
+                // 应用配置后立即校验，保证即使不聚焦输入框也能看到告警
+                ValidateInline(cfg);
             }
             finally
             {
@@ -123,6 +140,7 @@ namespace ScpLauncher
                 if (ofd.ShowDialog(this) == DialogResult.OK)
                 {
                     SetTextValue(txtKey, ofd.FileName);
+                    ValidateInline(null);
                 }
             }
         }
@@ -137,6 +155,7 @@ namespace ScpLauncher
                     if (fbd.ShowDialog(this) == DialogResult.OK)
                     {
                         SetTextValue(txtLocal, fbd.SelectedPath);
+                        ValidateInline(null);
                     }
                 }
                 return;
@@ -150,6 +169,7 @@ namespace ScpLauncher
                     if (fbd.ShowDialog(this) == DialogResult.OK)
                     {
                         SetTextValue(txtLocal, fbd.SelectedPath);
+                        ValidateInline(null);
                     }
                 }
             }
@@ -162,6 +182,7 @@ namespace ScpLauncher
                     if (ofd.ShowDialog(this) == DialogResult.OK)
                     {
                         SetTextValue(txtLocal, ofd.FileName);
+                        ValidateInline(null);
                     }
                 }
             }
@@ -215,6 +236,10 @@ namespace ScpLauncher
             }
             var cfg = ConfigStore.Load(alias);
             ApplyConfig(cfg);
+            // 记住上次使用的别名
+            ConfigStore.SetLastAlias(alias);
+            // 选择后立刻做快速校验并在页面上告警
+            ValidateInline(cfg);
         }
 
         private void btnCfgAdd_Click(object sender, EventArgs e)
@@ -390,7 +415,8 @@ namespace ScpLauncher
             if (uploadMode)
             {
                 if (Directory.Exists(path)) radioDir.Checked = true; else radioFile.Checked = true;
-                txtLocal.Text = path;
+                SetTextValue(txtLocal, path);
+                ValidateInline(null);
             }
             else
             {
@@ -405,6 +431,7 @@ namespace ScpLauncher
                     return;
                 }
                 SetTextValue(txtLocal, targetDir);
+                ValidateInline(null);
             }
         }
 
@@ -462,6 +489,117 @@ namespace ScpLauncher
                 return string.Empty;
             }
             return tb.Text ?? string.Empty;
+        }
+
+        private bool IsPlaceholderActive(TextBox tb)
+        {
+            var st = tb.Tag as PlaceholderState;
+            return st != null && st.Active;
+        }
+
+        private void OnDataFieldChanged(object sender, EventArgs e)
+        {
+            // 仅当当前正在编辑的控件处于占位符状态时跳过校验
+            if (ReferenceEquals(sender, txtKey) && IsPlaceholderActive(txtKey)) return;
+            if (ReferenceEquals(sender, txtLocal) && IsPlaceholderActive(txtLocal)) return;
+            ValidateInline(null);
+        }
+
+        private void radio_CheckedChanged(object sender, EventArgs e)
+        {
+            // 上传模式下切换文件/目录时，立即重新验证本地路径
+            ValidateInline(null);
+        }
+
+    private void ValidateInline(TransferConfig cfg)
+        {
+            // 校验私钥存在
+            string msg = string.Empty;
+            var key = cfg?.KeyPath ?? ReadTextValue(txtKey);
+            if (!string.IsNullOrWhiteSpace(key) && !File.Exists(key))
+            {
+                msg += "私钥文件不存在: " + key;
+            }
+
+            // 校验本地目录可写（下载模式使用 DownloadLocal；上传模式校验 Local 路径所在目录）
+            string localPath = uploadMode ? ReadTextValue(txtLocal) : (cfg?.DownloadLocal ?? ReadTextValue(txtLocal));
+            if (!string.IsNullOrWhiteSpace(localPath))
+            {
+                string dirToTest = localPath;
+                try
+                {
+                    if (File.Exists(localPath))
+                    {
+                        dirToTest = Path.GetDirectoryName(localPath);
+                    }
+                }
+                catch { }
+
+                if (!string.IsNullOrWhiteSpace(dirToTest))
+                {
+                    try
+                    {
+                        if (!Directory.Exists(dirToTest))
+                        {
+                            // 目录不存在不立即当做错误，提示创建前会再处理；此处仅检查已存在目录是否可写
+                        }
+                        else
+                        {
+                            bool ok;
+                            if (string.Equals(lastWriteCheckDir, dirToTest, StringComparison.OrdinalIgnoreCase))
+                            {
+                                ok = lastWriteCheckOk;
+                            }
+                            else
+                            {
+                                var testFile = Path.Combine(dirToTest, ".scp_write_test_" + Guid.NewGuid().ToString("N"));
+                                try
+                                {
+                                    File.WriteAllText(testFile, "test");
+                                    File.Delete(testFile);
+                                    ok = true;
+                                }
+                                catch
+                                {
+                                    ok = false;
+                                }
+                                lastWriteCheckDir = dirToTest;
+                                lastWriteCheckOk = ok;
+                            }
+                            if (!ok)
+                            {
+                                throw new UnauthorizedAccessException();
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        msg += (msg.Length > 0 ? "  |  " : string.Empty) + "本地目录不可写: " + dirToTest;
+                    }
+                }
+            }
+
+            lblWarn.Text = msg;
+        }
+
+        public void OnActivated()
+        {
+            // 每次进入子页面：重新加载一次配置列表（确保外部新增/删除能反映）
+            var current = comboConfig.SelectedItem as string;
+            RefreshConfigList(current);
+            // 初次进入后也执行一次内联校验
+            if (firstActivated)
+            {
+                firstActivated = false;
+                if (!string.IsNullOrWhiteSpace(current) && current != "(无配置)")
+                {
+                    ValidateInline(ConfigStore.Load(current));
+                }
+                else
+                {
+                    ValidateInline(null);
+                }
+            }
         }
 
         // 程序化设置值时，关闭占位符状态并恢复原始前景色

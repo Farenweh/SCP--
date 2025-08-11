@@ -5,7 +5,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <OutputType>WinExe</OutputType>
     <RootNamespace>ScpLauncher</RootNamespace>
-    <AssemblyName>ScpLauncher</AssemblyName>
+  <AssemblyName>SCP--</AssemblyName>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
